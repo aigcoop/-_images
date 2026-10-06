@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>지쿱 제품 이미지북</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Layout: 모바일 우선 · 상단 고정 분류 탭 + 2열 제품 카드 격자 */
+:root{
+  --bg:#f3f5f1; --surface:#ffffff; --fg:#1d2621; --muted:#66716a; --line:#dde3dc;
+  --accent:#2f6b4f; --accent-soft:#e3efe7; --on-accent:#ffffff;
+  --c-health:#2f6b4f; --c-cos:#a8496a; --c-med:#2c5f8a; --c-life:#8a6a2c;
+  --ph:#e8ece6;
+  --f-display:"Do Hyeon","IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121714; --surface:#1b221e; --fg:#e7ede8; --muted:#97a39b; --line:#2c3630;
+  --accent:#7fc4a0; --accent-soft:#213429; --on-accent:#0e1a13;
+  --c-health:#7fc4a0; --c-cos:#e693b1; --c-med:#8ab8e0; --c-life:#d9b673;
+  --ph:#232b26; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121714; --surface:#1b221e; --fg:#e7ede8; --muted:#97a39b; --line:#2c3630;
+  --accent:#7fc4a0; --accent-soft:#213429; --on-accent:#0e1a13;
+  --c-health:#7fc4a0; --c-cos:#e693b1; --c-med:#8ab8e0; --c-life:#d9b673;
+  --ph:#232b26; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:860px;margin:0 auto;padding-inline:16px;padding-block:20px 80px}
+header.top h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,7vw,40px);line-height:1.1;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header.top p{margin:6px 0 0;color:var(--muted);font-size:14px}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--fg);font-weight:600}
+
+.owner{margin-top:16px;background:var(--accent-soft);border-radius:14px;padding:14px;display:grid;gap:10px}
+.owner h2{margin:0;font-size:15px;font-weight:600}
+.owner p{margin:0;font-size:13px;color:var(--muted)}
+.owner .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.progress{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin-inline:-16px;padding:12px 16px 10px;border-bottom:1px solid var(--line);margin-top:16px}
+.search{width:100%;font:inherit;font-size:15px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.search:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-top:10px;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;font:inherit;font-size:14px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:7px 13px;border-radius:999px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.tab span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.tab[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tab[aria-pressed="true"] span{color:var(--bg);opacity:.75}
+.tab:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section.cat{margin-top:24px}
+section.cat h2{display:flex;align-items:baseline;gap:8px;margin:0 0 12px;font-family:var(--f-display);font-weight:400;font-size:24px}
+section.cat h2 .dot{width:10px;height:10px;border-radius:50%;background:var(--cc);align-self:center}
+section.cat h2 small{font-family:var(--f-body);font-size:13px;color:var(--muted)}
+section.cat h2 .btn{margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:620px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:820px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0;scroll-margin-top:140px}
+.card.flash{outline:2px solid var(--accent)}
+.thumb{aspect-ratio:1/1;max-width:100%;background:var(--ph);display:grid;place-items:center;position:relative;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:contain;background:#fff}
+.thumb .ph{display:grid;justify-items:center;gap:4px;color:var(--muted);font-size:12px;text-align:center;padding:8px}
+.thumb .ph b{font-family:var(--f-display);font-weight:400;font-size:34px;color:var(--cc);line-height:1}
+.chip{position:absolute;left:8px;top:8px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface);color:var(--cc);border:1px solid var(--line)}
+.meta{padding:10px 10px 4px;min-width:0}
+.meta h3{margin:0;font-size:14px;font-weight:600;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.meta .fn{margin:2px 0 0;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 10px;margin-top:auto}
+.btn{font:inherit;font-size:13px;font-weight:600;border-radius:10px;padding:8px 10px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--fg);text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{font-size:12px;padding:6px 10px}
+.edit{display:flex;gap:6px;padding:0 10px 10px;flex-wrap:wrap}
+.edit select{font:inherit;font-size:12px;flex:1;min-width:0;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:5px}
+
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.foot{margin-top:32px;font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>지쿱 제품 이미지북</h1>
+    <p>제품 사진을 분류별로 모아 두었어요. 필요한 사진은 바로 저장하고, 카톡이나 문자로 공유하세요.</p>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="bar">
+    <input class="search" id="q" type="search" placeholder="제품명으로 찾기 (예: 텔로메라)" aria-label="제품명 검색">
+    <div class="tabs" id="tabs" role="toolbar" aria-label="분류"></div>
+  </div>
+
+  <main id="list"></main>
+  <p class="foot">아이폰에서 저장이 안 되면 ‘공유’를 눌러 ‘이미지 저장’을 선택하거나, 사진을 길게 눌러 저장하세요.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const IMG_DIR = "images/";
+const CATS = [
+  {key:"health", name:"건강식품", color:"var(--c-health)"},
+  {key:"cos",    name:"화장품",   color:"var(--c-cos)"},
+  {key:"med",    name:"의료기기", color:"var(--c-med)"},
+  {key:"life",   name:"생활용품", color:"var(--c-life)"},
+];
+// [파일명, 제품명, 기본분류]
+const RAW = [
+ ["디엘릭서그린.jpg","디엘릭서 그린","health"],
+ ["디엘릭서레드.jpg","디엘릭서 레드","health"],
+ ["디엘릭서브라운효소.jpg","디엘릭서 브라운 효소","health"],
+ ["디엘릭서퍼플.jpg","디엘릭서 퍼플","health"],
+ ["디엘릭서화이트콜라겐.jpg","디엘릭서 화이트 콜라겐","health"],
+ ["루테인지아잔틴.jpg","루테인 지아잔틴","health"],
+ ["밀크씨슬.png","밀크씨슬","health"],
+ ["바이오K.jpg","바이오K","health"],
+ ["비타민c.png","비타민C","health"],
+ ["식물성msm.png","식물성 MSM","health"],
+ ["씨케이밸런스파워.png","씨케이 밸런스파워","health"],
+ ["씨케이밸런스파워1.jpg","씨케이 밸런스파워 (2)","health"],
+ ["씨케이밸런스파워3.png","씨케이 밸런스파워 (3)","health"],
+ ["알티지플러스.jpg","알티지 플러스","health"],
+ ["액티브디에스프로플러스단백질.jpg","액티브 DS 프로플러스 단백질","health"],
+ ["지쿱카페커피.jpg","지쿱 카페커피","health"],
+ ["지쿱커피믹스.jpg","지쿱 커피믹스","health"],
+ ["칼슘마그네슘.jpg","칼슘 마그네슘","health"],
+ ["텔로메라 gk.jpg","텔로메라 GK","health"],
+ ["텔로메라gk.jpg","텔로메라 GK (2)","health"],
+ ["텔로메라정.jpg","텔로메라정","health"],
+ ["프로바이오틱스유산균.jpg","프로바이오틱스 유산균","health"],
+ ["기초화장품세트.jpg","기초화장품 세트","cos"],
+ ["리프팅겔.png","리프팅 겔","cos"],
+ ["매직필링젤.jpg","매직 필링젤","cos"],
+ ["바디로션.jpg","바디로션","cos"],
+ ["바이오k비타c세럼.jpg","바이오K 비타C 세럼","cos"],
+ ["버블톡톡세럼.png","버블톡톡 세럼","cos"],
+ ["비너스필.jpg","비너스필","cos"],
+ ["비비크림.jpg","비비크림","cos"],
+ ["수딩마스크팩.png","수딩 마스크팩","cos"],
+ ["스킨이노베이터.png","스킨 이노베이터","cos"],
+ ["썬그림.jpg","썬크림","cos"],
+ ["클렌징오일.jpg","클렌징 오일","cos"],
+ ["텔로메라부스터.jpg","텔로메라 부스터","cos"],
+ ["텔로메라세럼.jpg","텔로메라 세럼","cos"],
+ ["텔로메라크림.jpg","텔로메라 크림","cos"],
+ ["테라패치.jpg","테라패치","med"],
+ ["테라패치2.jpg","테라패치 (2)","med"],
+ ["라피.jpg","라피","med"],
+ ["웨이브플러스.jpg","웨이브 플러스","med"],
+ ["웨이브플러스2.png","웨이브 플러스 (2)","med"],
+ ["고농축섬유유연제.jpg","고농축 섬유유연제","life"],
+ ["고농축세탁세재.jpg","고농축 세탁세제","life"],
+ ["바디워시.jpg","바디워시","life"],
+ ["바디컨디셔너.jpg","바디컨디셔너","life"],
+ ["샴푸.jpg","샴푸","life"],
+ ["컬러오리진염색약.jpg","컬러오리진 염색제","life"],
+ ["지쿱유황비누.jpg","지쿱 유황비누","life"],
+ ["지쿱주방세제.jpg","지쿱 주방세제","life"],
+ ["지쿱치약.jpg","지쿱 치약","life"],
+ ["지쿱칫솔.jpg","지쿱 칫솔","life"],
+ ["샤워업필터.png","샤워업 샤워필터","life"],
+ ["샤워업필터2.jpg","샤워업 샤워필터 (2)","life"],
+];
+
+const ITEMS = RAW.map((r,i)=>({id:"p"+String(i+1).padStart(2,"0"), file:r[0], name:r[1], cat:r[2]}));
+const norm = s => s.normalize("NFC").toLowerCase().replace(/\s+/g,"");
+const srcOf = it => IMG_DIR + encodeURIComponent(it.file);
+const catInfo = k => CATS.find(c=>c.key===k);
+let filter="all", query="";
+const $ = s=>document.querySelector(s);
+
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2600)}
+
+function renderTabs(){
+  const counts={all:ITEMS.length}; CATS.forEach(c=>counts[c.key]=ITEMS.filter(it=>it.cat===c.key).length);
+  $("#tabs").innerHTML=[{key:"all",name:"전체"}].concat(CATS).map(t=>
+    `<button class="tab" type="button" data-k="${t.key}" aria-pressed="${filter===t.key}">${t.name}<span>${counts[t.key]}</span></button>`).join("");
+  $("#stats").innerHTML=CATS.map(c=>`<span>${c.name} <b>${counts[c.key]}</b></span>`).join("<span>·</span>");
+}
+function card(it){
+  const c=catInfo(it.cat);
+  return `<article class="card" id="${it.id}" style="--cc:${c.color}">
+    <div class="thumb">
+      <img src="${srcOf(it)}" alt="${it.name} 제품 사진" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+      <div class="ph" hidden><b>${it.name.charAt(0)}</b>images 폴더에<br>사진이 없어요</div>
+      <span class="chip">${c.name}</span>
+    </div>
+    <div class="meta"><h3>${it.name}</h3><p class="fn">${it.file}</p></div>
+    <div class="acts">
+      <button class="btn primary" type="button" data-act="dl" data-id="${it.id}">저장</button>
+      <button class="btn" type="button" data-act="share" data-id="${it.id}">공유</button>
+    </div>
+  </article>`;
+}
+function render(){
+  renderTabs();
+  const q=norm(query);
+  const html=CATS.filter(c=>filter==="all"||filter===c.key).map(c=>{
+    const list=ITEMS.filter(it=>it.cat===c.key && (!q||norm(it.name).includes(q)||norm(it.file).includes(q)));
+    if(!list.length) return "";
+    return `<section class="cat" style="--cc:${c.color}"><h2><span class="dot"></span>${c.name}<small>${list.length}개</small>
+      <button class="btn sm" type="button" data-act="zip" data-cat="${c.key}">전체 저장(ZIP)</button></h2>
+      <div class="grid">${list.map(card).join("")}</div></section>`;
+  }).join("");
+  $("#list").innerHTML = html || `<p class="empty">‘${query}’에 맞는 제품이 없어요. 다른 이름으로 찾아보세요.</p>`;
+}
+
+async function getBlob(it){
+  const res=await fetch(srcOf(it));
+  if(!res.ok) throw new Error("missing");
+  return res.blob();
+}
+function saveBlob(blob, filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+async function download(it){
+  try{ saveBlob(await getBlob(it), it.file); toast(`${it.name} 사진을 저장했어요.`); }
+  catch(e){
+    // 파일을 직접 연 경우(file://) 등 fetch가 막히면 원본 링크로 저장
+    const a=document.createElement("a"); a.href=srcOf(it); a.download=it.file; a.target="_blank";
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+}
+function linkOf(it){ return location.href.split("#")[0]+"#"+it.id; }
+async function share(it){
+  const text=`[${catInfo(it.cat).name}] ${it.name}`;
+  try{
+    const blob=await getBlob(it);
+    const file=new File([blob], it.file, {type:blob.type||"image/jpeg"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:it.name, text}); return;
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  if(navigator.share){
+    try{ await navigator.share({title:it.name, text, url:linkOf(it)}); return; }
+    catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  try{ await navigator.clipboard.writeText(text+"\n"+linkOf(it)); toast("제품명과 링크를 복사했어요. 카톡에 붙여 넣으세요."); }
+  catch(e){ toast("이 브라우저는 공유를 지원하지 않아요. 사진을 저장해서 보내 주세요."); }
+}
+async function zipCat(key, btn){
+  if(!window.JSZip){ toast("ZIP 기능을 불러오지 못했어요. 인터넷 연결을 확인해 주세요."); return; }
+  const list=ITEMS.filter(it=>it.cat===key), zip=new JSZip(), c=catInfo(key);
+  btn.disabled=true; let n=0;
+  for(const it of list){
+    btn.textContent=`모으는 중 ${n}/${list.length}`;
+    try{ zip.file(it.file, await getBlob(it)); }catch(e){}
+    n++;
+  }
+  const count=Object.keys(zip.files).length;
+  btn.disabled=false; btn.textContent="전체 저장(ZIP)";
+  if(!count){ toast("images 폴더에서 사진을 찾지 못했어요."); return; }
+  saveBlob(await zip.generateAsync({type:"blob"}), `지쿱_${c.name}_이미지.zip`);
+  toast(`${c.name} 사진 ${count}장을 ZIP으로 저장했어요.`);
+}
+
+document.addEventListener("click", e=>{
+  const tab=e.target.closest(".tab"); if(tab){filter=tab.dataset.k;render();return}
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const it=ITEMS.find(x=>x.id===b.dataset.id);
+  if(b.dataset.act==="dl") download(it);
+  if(b.dataset.act==="share") share(it);
+  if(b.dataset.act==="zip") zipCat(b.dataset.cat, b);
+});
+$("#q").addEventListener("input",e=>{query=e.target.value;render()});
+function jumpToHash(){
+  const id=location.hash.slice(1); const el=id&&document.getElementById(id);
+  if(el){ el.scrollIntoView({block:"center"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),2000); }
+}
+render(); jumpToHash();
+window.addEventListener("hashchange", jumpToHash);
+</script>
+</body>
+</html>

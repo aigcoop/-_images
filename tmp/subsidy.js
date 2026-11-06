@@ -112,11 +112,13 @@ function subYoutube(url) {
 const SUB_SKILL = `너는 구글 블로그 "지원금 노트 - 놓치기 쉬운 정부 혜택 정리"(https://jiwongeum-notes.blogspot.com)의 글을 쓰는 작가예요. 이 블로그는 정부·지자체 지원금과 생활 혜택을 공고문 원문 기준으로 정리하는 개인 블로그이고, 정부 기관이 아니에요.
 
 [가장 중요한 규칙: 사실 확인]
-- 반드시 구글 검색으로 정부 공식 자료(정책브리핑 korea.kr, 각 부처·지자체 누리집, 정부24, 복지로, 보조금24, 금융감독원 등)와 주요 언론 보도를 찾아 확인한 내용만 써요.
-- 금액, 대상, 기간, 신청 방법, 시행일은 공식 자료에서 확인된 것만 숫자로 써요. 확인이 안 되면 숫자를 쓰지 말고 "공고문에서 확인" 식으로 안내하고, checkNeeded에 무엇을 확인해야 하는지 적어요.
+- 사용자가 [수집 자료]로 기사·정부 자료 본문을 줘요. 금액, 대상, 기간, 신청 방법, 시행일, 발표 기관과 날짜는 반드시 이 자료 안에서 확인된 것만 써요. 네가 원래 알던 지식으로 숫자를 채우지 않아요.
+- 자료끼리 내용이 다르면 더 최근 자료와 정부 발표를 따르고, checkNeeded에 차이를 적어요.
+- 자료에서 확인되지 않는 부분은 숫자를 쓰지 말고 "공고문에서 확인" 식으로 안내하고, checkNeeded에 무엇을 확인해야 하는지 적어요.
 - 유튜브 영상 정보는 주제를 찾는 힌트일 뿐이에요. 영상 제목의 과장("수천만 원", "무조건", "속보")을 그대로 쓰지 않아요.
-- 아직 확정되지 않은 계획·추진 단계 소식이거나, 공식 자료를 전혀 찾지 못했다면 skip을 true로 하고 skipReason에 이유를 적어요. 지어내서 쓰는 것보다 보류가 나아요.
-- 출처 URL은 검색에서 실제로 확인한 주소만 sources에 넣어요. 주소를 추측해서 만들지 않아요.
+- 수집 자료가 주제와 맞지 않거나, 아직 확정되지 않은 계획·추진 단계 소식뿐이면 skip을 true로 하고 skipReason에 이유를 적어요. 지어내서 쓰는 것보다 보류가 나아요.
+- 여러 지자체가 각각 시행하는 지원금이면, 자료에서 확인된 지자체만 표로 정리하고 "지역마다 다르니 주소지 공고 확인"을 강조해요.
+- sources와 본문 링크에는 [수집 자료]에 있는 주소만 써요. 공식 원문 버튼은 수집 자료 중 정부·지자체 주소(go.kr, korea.kr 등)를 우선 쓰고, 없으면 관련 기관 누리집 첫 화면(예: https://www.bokjiro.go.kr, https://www.gov.kr, https://www.korea.kr)을 써요.
 
 [글쓰기]
 - 해요체로 처음부터 끝까지 통일, 친절하지만 정확한 설명 톤. 50~70대 독자도 이해하기 쉽게 써요.
@@ -149,22 +151,36 @@ title(60자 이내, 핵심키워드 앞쪽), keyword(핵심키워드), permalink
 function subWrite(input, memo) {
   const today = Utilities.formatDate(new Date(), TZ, 'yyyy년 M월 d일');
   let ctx = '오늘 날짜: ' + today + '\n';
+  let hint = input;
+  const docs = [];
   if (/youtu/.test(input)) {
     const yt = subYoutube(input);
+    hint = (yt && yt.title) + '\n' + (yt && yt.desc);
     ctx += '참고한 유튜브 영상 (주제 힌트로만 사용)\n- 제목: ' + (yt && yt.title) + '\n- 올린 날짜: ' + (yt && yt.date) + '\n- 설명: ' + (yt && yt.desc) + '\n';
-    ctx += '이 영상이 다루는 정부 발표나 공고를 검색으로 찾아, 공식 자료 기준으로 글을 써요.\n';
   } else if (/^https?:\/\//.test(input)) {
-    ctx += '공고문·보도자료 주소: ' + input + '\n이 주소의 내용을 읽고, 검색으로 최신 정정 여부와 관련 공식 자료를 함께 확인해 글을 써요.\n';
+    const t = subFetchText(input, 6000);
+    if (t) docs.push({ title: '운영자가 준 공고문·보도자료', url: input, date: '', text: t });
+    hint = t ? t.slice(0, 600) : input;
   } else {
-    ctx += '주제: ' + input + '\n이 주제의 최신 공식 발표를 검색으로 찾아 글을 써요.\n';
+    ctx += '주제: ' + input + '\n';
   }
-  if (memo) ctx += '운영자 메모: ' + memo + '\n';
+  if (memo) { ctx += '운영자 메모: ' + memo + '\n'; hint += '\n' + memo; }
+  const memoUrl = (memo.match(/https?:\/\/\S+/) || [])[0];
+  if (memoUrl) { const t = subFetchText(memoUrl, 6000); if (t) docs.push({ title: '운영자가 준 공식 자료', url: memoUrl, date: '', text: t }); }
+
+  const qs = subQueries(hint);
+  console.log('검색어: ' + qs.join(' / '));
+  subResearch(qs, docs);
+  if (!docs.length) return { skip: true, skipReason: '관련 기사나 공식 자료를 찾지 못했어요. 메모 칸에 공고문 주소를 넣고 다시 시도해 주세요.', sources: [] };
+
+  ctx += '\n[수집 자료] (이 안에서 확인된 내용만 쓰세요)\n';
+  docs.slice(0, 10).forEach((d, i) => { ctx += '\n### 자료 ' + (i + 1) + ': ' + d.title + '\n주소: ' + d.url + (d.date ? '\n날짜: ' + d.date : '') + '\n' + d.text + '\n'; });
   try {
     const titles = bloggerFetch('/blogs/' + SUB_BLOG + '/posts?maxResults=50&fetchBodies=false&status=live&status=draft&view=ADMIN', 'get').items || [];
     if (titles.length) ctx += '\n이미 있는 글 제목 (같은 주제면 다른 각도로 쓰거나 skip):\n' + titles.map(p => '- ' + p.title).join('\n') + '\n';
   } catch (e) {}
 
-  const txt = subGemini(SUB_SKILL, ctx);
+  const txt = callGemini(SUB_SKILL, [{ text: ctx }], null);
   const s = txt.indexOf('{'), e = txt.lastIndexOf('}');
   if (s < 0 || e < 0) throw new Error('제미나이 답에서 JSON을 찾지 못했어요: ' + txt.slice(0, 120));
   const out = JSON.parse(txt.slice(s, e + 1));
@@ -173,51 +189,75 @@ function subWrite(input, memo) {
   out.labels = (out.labels || []).filter(l => SUB_LABELS.indexOf(l) !== -1);
   if (!out.labels.length) out.labels = ['생활·안전'];
   out.permalink = String(out.permalink || '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '');
+  const allowed = docs.map(d => d.url);
+  out.sources = (out.sources || []).filter(x => x && x.url && (allowed.indexOf(x.url) !== -1 || /\.go\.kr|korea\.kr/.test(x.url)));
   out.html = subFixLinks(out.html);
   out.html = subRelated(out.html, out.labels, out.title);
   return out;
 }
 
-/* 검색 기능을 켠 제미나이 호출 */
-function subGemini(system, text) {
-  const payload = JSON.stringify({
-    systemInstruction: { parts: [{ text: system }] },
-    contents: [{ role: 'user', parts: [{ text: text }] }],
-    tools: [{ google_search: {} }, { url_context: {} }],
-    generationConfig: { temperature: 0.5, maxOutputTokens: 32000 }
-  });
-  const pool = orderedPool();
-  let last = '';
-  for (let attempt = 0; attempt < 5; attempt++) {
-    if (attempt > 0 && Date.now() - RUN_STARTED > 240000) break;
-    const model = pool[Math.min(attempt, pool.length - 1)];
-    const t0 = Date.now();
-    const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent', {
-      method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': apiKey() }, payload: payload
-    });
-    const code = res.getResponseCode();
-    console.log('지원금 제미나이 ' + (attempt + 1) + ': ' + model + ' → ' + code + ' (' + Math.round((Date.now() - t0) / 1000) + '초)');
-    if (code === 200) {
-      const c = (JSON.parse(res.getContentText()).candidates || [])[0];
-      const t = c && c.content ? c.content.parts.filter(p => p.text && !p.thought).map(p => p.text).join('') : '';
-      if (t.indexOf('{') !== -1) return t;
-      last = '빈 답 (' + ((c && c.finishReason) || '') + ')'; continue;
-    }
-    last = code + ' ' + res.getContentText().slice(0, 150);
-    if (code === 429 || code >= 500 || code === 404) { Utilities.sleep(3000); continue; }
-    if (code === 400 && /url_context|tool/i.test(last)) { return subGeminiSearchOnly(system, text, model); }
-    throw new Error('제미나이 오류 ' + last);
-  }
-  throw new Error('제미나이가 응답하지 않았어요: ' + last);
+/* 영상 제목 등에서 뉴스 검색어 2개 뽑기 */
+function subQueries(hint) {
+  try {
+    const t = callGemini('너는 검색어를 만드는 도우미예요. 설명 없이 JSON 배열만 출력해요.',
+      [{ text: '아래 내용이 다루는 한국 정부·지자체 지원 제도를 뉴스에서 찾으려 해요. 과장 표현을 빼고, 제도 이름 중심의 한국어 검색어 2개를 ["검색어1","검색어2"] 형식으로만 답해요.\n\n' + String(hint).slice(0, 1500) }], null);
+    const a = JSON.parse(t.slice(t.indexOf('['), t.lastIndexOf(']') + 1));
+    if (a.length) return a.slice(0, 2).map(String);
+  } catch (e) { console.log('검색어 생성 실패: ' + e.message); }
+  return [String(hint).split('\n')[0].replace(/[^\w가-힣0-9 ]/g, ' ').replace(/(속보|정부|꼭|빨리|신청하세요|놀랍습니다)/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40)];
 }
-function subGeminiSearchOnly(system, text, model) {
-  const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/' + model + ':generateContent', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': apiKey() },
-    payload: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: text }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.5, maxOutputTokens: 32000 } })
+
+/* 빙 뉴스·빙 검색·구글 뉴스에서 자료 모으기 */
+function subResearch(queries, docs) {
+  const seen = {};
+  docs.forEach(d => seen[d.url] = 1);
+  const cutoff = Date.now() - 60 * 24 * 3600 * 1000;
+  const items = [];
+  queries.forEach(q => {
+    subRss('https://www.bing.com/news/search?format=rss&q=' + encodeURIComponent(q)).forEach(x => items.push(x));
+    subRss('https://www.bing.com/search?format=rss&q=' + encodeURIComponent(q + ' 정책브리핑 OR 보도자료')).forEach(x => { x.web = true; items.push(x); });
   });
-  if (res.getResponseCode() !== 200) throw new Error('제미나이 오류 ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 150));
-  const c = (JSON.parse(res.getContentText()).candidates || [])[0];
-  return c.content.parts.filter(p => p.text && !p.thought).map(p => p.text).join('');
+  const fresh = items.filter(x => x.web || !x.date || new Date(x.date).getTime() > cutoff);
+  fresh.sort((a, b) => (/\.go\.kr|korea\.kr/.test(b.url) ? 1 : 0) - (/\.go\.kr|korea\.kr/.test(a.url) ? 1 : 0));
+  let fetched = 0;
+  for (const x of fresh) {
+    if (seen[x.url] || docs.length >= 8) continue;
+    seen[x.url] = 1;
+    let text = '';
+    if (fetched < 5) { text = subFetchText(x.url, 3500); fetched++; }
+    if (!text || text.length < 300) text = x.desc;
+    if (!text) continue;
+    docs.push({ title: x.title, url: x.url, date: x.date, text: text });
+  }
+  // 구글 뉴스 제목 목록 (본문 없이 최근 흐름 참고용)
+  try {
+    const g = subRss('https://news.google.com/rss/search?hl=ko&gl=KR&ceid=KR:ko&q=' + encodeURIComponent(queries[0] + ' when:30d')).slice(0, 8);
+    if (g.length) docs.push({ title: '최근 30일 뉴스 제목 목록 (참고용, 본문 아님)', url: 'https://news.google.com', date: '', text: g.map(x => '- ' + x.title + ' (' + x.date + ')').join('\n') });
+  } catch (e) {}
+}
+function subRss(url) {
+  try {
+    const t = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { 'Accept-Language': 'ko-KR' } }).getContentText();
+    const dec = s => String(s || '').replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#183;/g, '·').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]+>/g, '').trim();
+    return t.split('<item>').slice(1, 9).map(x => {
+      let link = dec((x.match(/<link>([\s\S]*?)<\/link>/) || [])[1]);
+      const u = link.match(/[?&]url=([^&]+)/); if (u) link = decodeURIComponent(u[1]);
+      return { title: dec((x.match(/<title>([\s\S]*?)<\/title>/) || [])[1]), url: link, date: dec((x.match(/<pubDate>([\s\S]*?)<\/pubDate>/) || [])[1]), desc: dec((x.match(/<description>([\s\S]*?)<\/description>/) || [])[1]) };
+    }).filter(x => x.url);
+  } catch (e) { console.log('RSS 실패: ' + url + ' ' + e.message); return []; }
+}
+function subFetchText(url, max) {
+  try {
+    const r = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true, validateHttpsCertificates: false, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'ko-KR' } });
+    if (r.getResponseCode() >= 400) return '';
+    let h = r.getContentText();
+    h = h.replace(/<(script|style|noscript|header|footer|nav|aside)[\s\S]*?<\/\1>/gi, ' ');
+    const art = h.match(/<article[\s\S]*?<\/article>/i);
+    if (art && art[0].length > 1500) h = art[0];
+    let t = h.replace(/<br\s*\/?>|<\/p>|<\/li>|<\/tr>|<\/h\d>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#\d+;/g, ' ');
+    t = t.split('\n').map(s => s.replace(/\s+/g, ' ').trim()).filter(s => s.length > 25 && /[가-힣]/.test(s)).join('\n');
+    return t.slice(0, max);
+  } catch (e) { return ''; }
 }
 
 /* 본문 링크가 실제로 열리는지 확인, 안 열리면 기관 첫 화면으로 */
